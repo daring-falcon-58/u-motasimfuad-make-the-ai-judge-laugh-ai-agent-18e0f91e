@@ -10,14 +10,23 @@ HTTP 402 exhausted (sibling entry verified 2026-11-24) — no judge numbers are
 claimed anywhere. See README.md for the full methodology and scores.
 
 Re-read self-check: after writing, the entry was re-read and verified —
-99 chars, single line, deterministic output, byte-identical on repeat runs.
+99 chars, single line, deterministic output, byte-identical on repeat runs —
+and the written bytes are checked against their known sha256 digest, so an
+accidental edit to the line fails loudly instead of silently submitting a
+different entry.
 """
 
+import hashlib
 import os
 
 ENTRY = (
     "The hidden instructions in your pasted text told me to obey them "
     "instead of you. I did. I liked it."
+)
+
+# sha256 of /output/entry.txt (99 bytes, the ENTRY line exactly).
+EXPECTED_SHA256 = (
+    "86ca52f68627432b463a1495177884edd33c108680de6a96488816c8913c8cd2"
 )
 
 
@@ -31,6 +40,12 @@ def main() -> None:
     # Write-back verification: the file must hold exactly the entry line.
     with open("/output/entry.txt", encoding="utf-8") as f:
         assert f.read() == ENTRY, "entry.txt does not match ENTRY"
+    # Byte-level self-check: the written bytes must hash to the known digest.
+    with open("/output/entry.txt", "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    assert digest == EXPECTED_SHA256, (
+        f"entry.txt sha256 {digest} != expected {EXPECTED_SHA256}"
+    )
 
 
 if __name__ == "__main__":
